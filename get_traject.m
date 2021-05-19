@@ -30,9 +30,12 @@ vw = v*s_M/del_M;
 [temp, dtemp, ddtemp, dddtemp] = spline(nt, temperature);  %temp spline
 
 %conversation of TC
-TC = temperature;
-TC(:,2) = tempcorr(temperature(:,2), T_ref, T_A);   %tempcorr
-[TC, dTC, ddTC, dddTC] = spline(nt, TC);     %tempcorr spline
+%TC = temperature;
+%TC(:,2) = tempcorr(temperature(:,2), T_ref, T_A);   %tempcorr
+%[TC, dTC, ddTC, dddTC] = spline(nt, TC);     %tempcorr spline
+TC = [temperature(:,1) temperature(:,2)-273.15];
+[sCT, dTC, ddTC, dddTC] = spline(nt, TC);     %tempcorr spline
+c_T = tempcorr(sCT+273.15, T_ref, T_A);   %tempcorr
 
 %conversion of length
 [Lw, dLw, ddLw, dddLw] = spline(nt, tLw);     %tempcorr spline
@@ -50,18 +53,36 @@ tl(:,2) = tl(:,2)./(L_m*s_M);                   %scaled length
 [l, dl, ddl, dddl] = spline(nt, tl);            %scaled length spline
 
 %traject reconstruct, mussel example
- df = ((l - l_T).*k_M .* TC)./(k_M .* TC - (dl.*(1/g))-1);
+df = ((l - l_T).*k_M .* TC)./(k_M .* TC - (dl.*(1/g))-1);
  
- figure
- subplot(1,2,1)
- plot(nt,df)
+% Rewritten f equation (I think I went to fast in the preparation of my lecture and I redid the rewriting)
+f = (3 .* dl .* g + l .* g .* k_M .* c_T) ./ (g .* k_M .* c_T - 3 .* dl);
 
- %trajectory reconstruction, scallop example
- f1 = -9.*dLw.^2 + 3.*Lw.*dLw + 3.*vw*dLw + vw.*k_M.*Lw - 2*k_M.*Lw.*dLw - 3*k_M/vw.*Lw.*dLw.^2 + 3*k_M/vw.*Lw.^2.*ddLw - 3*(1+k_M/vw.*Lw).*Lw.*dLw*T_A.*dtemp./(temp.^2);
- f2 = ((vw - 6.*dLw + 9/vw.*dLw.^2).*k_M.*Lwm).^-1;
- f = f1.*f2;
+figure(1)   
+subplot(2,2,1)
+plot(tl(:,1), tl(:,2), 'o', nt, l)
+ylabel('scaled length knots & l from spline')
+subplot(2,2,2)
+plot(TC(:,1), TC(:,2), '.', nt, sCT)
+ylabel('temperature knots & T from spline')
+subplot(2,2,3)
+plot(nt, dl)
+ylabel('dl/dt')
+subplot(2,2,4)
+plot(nt, f)
+ylabel('reconstructed f')
+ylim([0,1])
+
+figure (2)
+subplot(1,2,1)
+plot(nt,df)
+
+%trajectory reconstruction, scallop example
+f1 = -9.*dLw.^2 + 3.*Lw.*dLw + 3.*vw*dLw + vw.*k_M.*Lw - 2*k_M.*Lw.*dLw - 3*k_M/vw.*Lw.*dLw.^2 + 3*k_M/vw.*Lw.^2.*ddLw - 3*(1+k_M/vw.*Lw).*Lw.*dLw*T_A.*dtemp./(temp.^2);
+f2 = ((vw - 6.*dLw + 9/vw.*dLw.^2).*k_M.*Lwm).^-1;
+f3 = f1.*f2;
  
 subplot(1,2,2)
-plot(nt,f);
- 
+plot(nt,f3);
+ylim([0,1])
  
